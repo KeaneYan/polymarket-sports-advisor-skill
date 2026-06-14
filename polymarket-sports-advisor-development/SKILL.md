@@ -1,6 +1,6 @@
 ---
 name: polymarket-sports-advisor-development
-description: Use when building read-only Polymarket sports betting advisor tools with TDD, market mapping, CLOB pricing, model calibration, paper trading, CLV tracking, and scheduled-run-style operations.
+description: Build and iterate read-only Polymarket sports betting advisor tools with TDD, market mapping, CLOB pricing, and paper-trading safety.
 version: 1.0.0
 author: Hermes Agent
 license: MIT
@@ -27,8 +27,12 @@ Use this when building or extending a Polymarket sports recommendation tool, esp
    - For World Cup match markets, Polymarket may represent 1X2 as three binary markets: home win, draw, away win.
    - Parse Gamma's double-encoded `outcomePrices` and `clobTokenIds` with `json.loads`.
 3. Keep probability model separate from market pricing.
-   - First model can be Elo + Poisson: output home/draw/away probabilities that sum to 1.
+   - First model can be Elo + Poisson/Dixon-Coles: output home/draw/away probabilities that sum to 1.
+   - Use `dixon_coles_rho` to correct low-score dependence; keep `rho=0.0` as the independent-Poisson fallback and calibrate `rho` only with held-out/rolling tests.
+   - Use a separate team-form layer for data-derived attack/defense multipliers before manual injury/lineup adjustments. A pragmatic first version can derive `attack_multiplier` and `defense_multiplier` from recent historical goals for/against relative to the global average, with hard clamps and minimum-match filters; note that defense multiplier lower means stronger defense.
    - Do not call `model_prob - market_price` EV; that is edge. Compute EV separately.
+   - Optional market shrinkage should be explicit and conservative: `final_prob = model_weight * model_prob + (1 - model_weight) * market_buy_price`, with `model_weight=1.0` preserving raw model output.
+   - Injuries/lineups should enter as auditable team adjustments (`elo_delta`, `attack_multiplier`, `defense_multiplier`, notes) before any external API automation.
 4. Prefer CLOB orderbook for actionable prices.
    - Use token ID from `clobTokenIds[0]` for the Yes side.
    - Best ask is immediate buy price for tiny size.
@@ -78,7 +82,8 @@ Use this when building or extending a Polymarket sports recommendation tool, esp
 
 13. Harden cron data quality before trusting paper results.
    - Scanner jobs should alert/record only on new BUY, BUY disappearance, material edge change, or material market-quality deterioration (spread widening / liquidity drop); repeated identical scans should stay silent and not create duplicate snapshots.
-   - Scanner report copy should be beginner-friendly and cover every scheduled match in the report window, not only BUY opportunities: show each match as a card with “recommendation / what to buy / model home-draw-away probabilities / why / trading quality / paper stake,” translate `home/away/draw`, include `NO MARKET` rows when no usable Polymarket market is found, and keep a compact field glossary for `model`, `buy`, `edge`, `spread`, `liq`, and `stake`.
+   - Scanner report copy should be beginner-friendly and cover every scheduled match in the report window, not only BUY opportunities: default to the next 24 hours, sort cards by kickoff time from soonest to latest, show kickoff time in Beijing time, show each match as a card with “recommendation / what to buy / model home-draw-away probabilities / why / trading quality / paper stake,” translate `home/away/draw`, include `NO MARKET` rows when no usable Polymarket market is found, and keep a compact field glossary for `model`, `buy`, `edge`, `spread`, `liq`, and `stake`.
+   - See `references/beginner-friendly-reports.md` for the report UX pattern and copy checklist.
    - Separate report completeness from notification noise: manual/preview reports should include every match in the window, but scheduled delivery can remain change-only. In record mode, collect all match cards for the outgoing report only when at least one material alert fires; write paper snapshots only for alert rows so duplicate scans do not inflate the ledger.
    - Capture CLV relative to kickoff, not a single fixed time of day. A practical default is polling every 15 minutes but recording only matches inside a kickoff-relative window such as 30-120 minutes before start.
    - Add a no-agent cron health report that checks Polymarket job schedules/status and appends market-level backtest summary; this catches broken scripts or delivery before the tournament starts.
@@ -93,7 +98,3 @@ Use this when building or extending a Polymarket sports recommendation tool, esp
 - Run full tests after each feature: `python3 -m pytest -q`.
 - Run at least one real active/unresolved market query.
 - Also test a resolved market; 0/1 prices should be marked SKIP/resolved, not low-liquidity opportunity.
-
-## Example Project Shape
-
-Example implementation: build a local read-only advisor package with separate modules for model probabilities, Polymarket market mapping, CLOB pricing, paper persistence, reporting, calibration, and scheduled operations.
