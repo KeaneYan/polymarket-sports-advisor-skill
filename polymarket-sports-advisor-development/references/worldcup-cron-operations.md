@@ -1,6 +1,6 @@
 # World Cup Polymarket Cron Operations
 
-Use this reference when operationalizing a read-only Polymarket sports advisor with scheduled jobs jobs.
+Use this reference when operationalizing a read-only Polymarket sports advisor with Hermes cron jobs.
 
 ## Cron Pattern
 
