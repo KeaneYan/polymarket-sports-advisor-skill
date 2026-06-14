@@ -30,6 +30,7 @@ Use this when building or extending a Polymarket sports recommendation tool, esp
    - First model can be Elo + Poisson/Dixon-Coles: output home/draw/away probabilities that sum to 1.
    - Use `dixon_coles_rho` to correct low-score dependence; keep `rho=0.0` as the independent-Poisson fallback and calibrate `rho` only with held-out/rolling tests.
    - Use a separate team-form layer for data-derived attack/defense multipliers before manual injury/lineup adjustments. A pragmatic first version can derive `attack_multiplier` and `defense_multiplier` from recent historical goals for/against relative to the global average, with hard clamps and minimum-match filters; note that defense multiplier lower means stronger defense.
+   - Treat team form and manual injury/lineup adjustments as separate deliverables; see `references/model-optimization-and-reporting.md` for the layered model and report UX checklist.
    - Do not call `model_prob - market_price` EV; that is edge. Compute EV separately.
    - Optional market shrinkage should be explicit and conservative: `final_prob = model_weight * model_prob + (1 - model_weight) * market_buy_price`, with `model_weight=1.0` preserving raw model output.
    - Injuries/lineups should enter as auditable team adjustments (`elo_delta`, `attack_multiplier`, `defense_multiplier`, notes) before any external API automation.
@@ -42,6 +43,7 @@ Use this when building or extending a Polymarket sports recommendation tool, esp
    - Skip resolved/untradeable 0/1 prices before liquidity checks.
    - Skip high spread and low liquidity.
    - BUY only when edge exceeds threshold after using actionable buy price.
+   - Gate BUY by model loss probability (`1 - model_probability`) as well as edge; high-edge longshots can be WATCH if the user does not accept high principal-loss frequency.
    - Cap Kelly sizing hard, e.g. 2% bankroll.
 6. Provide JSON output for paper trading and future database ingestion.
 7. Add paper-trading persistence before any real-money flow.
@@ -82,7 +84,7 @@ Use this when building or extending a Polymarket sports recommendation tool, esp
 
 13. Harden cron data quality before trusting paper results.
    - Scanner jobs should alert/record only on new BUY, BUY disappearance, material edge change, or material market-quality deterioration (spread widening / liquidity drop); repeated identical scans should stay silent and not create duplicate snapshots.
-   - Scanner report copy should be beginner-friendly and cover every scheduled match in the report window, not only BUY opportunities: default to the next 24 hours, sort cards by kickoff time from soonest to latest, show kickoff time in Beijing time, show each match as a card with “recommendation / what to buy / model home-draw-away probabilities / why / trading quality / paper stake,” translate `home/away/draw`, include `NO MARKET` rows when no usable Polymarket market is found, and keep a compact field glossary for `model`, `buy`, `edge`, `spread`, `liq`, and `stake`.
+   - Scanner report copy should be beginner-friendly and cover every scheduled match in the report window, not only BUY opportunities: default to the next 24 hours, sort cards by kickoff time from soonest to latest, show kickoff time in Beijing time, show each match as a card with “recommendation / what to buy / model home-draw-away probabilities / loss probability / risk bucket / why / trading quality / paper stake,” translate `home/away/draw`, include `NO MARKET` rows when no usable Polymarket market is found, and keep a compact field glossary for `model`, `buy`, `edge`, `loss probability`, `risk`, `spread`, `liq`, and `stake`.
    - See `references/beginner-friendly-reports.md` for the report UX pattern and copy checklist.
    - Separate report completeness from notification noise: manual/preview reports should include every match in the window, but scheduled delivery can remain change-only. In record mode, collect all match cards for the outgoing report only when at least one material alert fires; write paper snapshots only for alert rows so duplicate scans do not inflate the ledger.
    - Capture CLV relative to kickoff, not a single fixed time of day. A practical default is polling every 15 minutes but recording only matches inside a kickoff-relative window such as 30-120 minutes before start.
