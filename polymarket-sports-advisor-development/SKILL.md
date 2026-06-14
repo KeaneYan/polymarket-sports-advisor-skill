@@ -46,13 +46,13 @@ Use this when building or extending a Polymarket sports recommendation tool, esp
    - Evaluate paper profit for BUY rows and calibration metrics (Brier/log loss) across all settled outcomes.
    - Keep `paper_profit` wording distinct from ROI unless profit/staked capital is explicitly computed.
    - See `references/paper-trading-sqlite.md` for schema/CLI pitfalls.
-8. Add schedule-driven scheduled-run reports without coupling scheduled-run to live fixture sources.
+8. Add schedule-driven cron reports without coupling cron to live fixture sources.
    - Keep scheduled report jobs reading a local `data/schedule.json`.
    - Refresh that file via an importer CLI from open fixture data, then verify generated schedule counts and scanner smoke output.
    - Skip knockout placeholders (`1A`, `W73`, `L101`, `Winner Group A`, etc.) until concrete teams are known.
    - Refresh team Elo from eloratings.net static TSV files rather than scraping rendered pages: `World.tsv` contains current ratings (team code in column 3, rating in column 4), and `en.teams.tsv` maps codes to primary English team names.
    - Keep fixture/team aliases explicit (`USA` -> `United States`, `Bosnia and Herzegovina` -> `Bosnia`) and fail on missing Elo rather than silently defaulting.
-   - For a concrete World Cup implementation pattern, see `references/worldcup-schedule-scheduled-run-reports.md`.
+   - For a concrete World Cup implementation pattern, see `references/worldcup-schedule-cron-reports.md`.
 9. Calibrate Elo/Poisson parameters before trusting edge magnitude.
    - Prefer yearly eloratings result files (`YYYY_results.tsv`) over `latest.tsv` once available; `latest.tsv` is too thin for calibration. Support `--start-year/--end-year`, record the source range in `model_params.json`, and still keep runtime readers using only the core parameter fields.
    - Optimize log loss on train matches with a small grid, then report held-out test log loss/Brier score and sample counts before changing production defaults; avoid trusting in-sample improvements alone.
@@ -70,16 +70,17 @@ Use this when building or extending a Polymarket sports recommendation tool, esp
    - Keep unsettled BUY out of ROI/P&L but include them in CLV if closing prices exist.
    - Treat “no settled BUY” as insufficient evidence, not breakeven.
 
-12. Operationalize the paper-trading loop with scheduled jobs before considering real orders.
-   - Use deterministic script-only scheduled jobs (`no_agent=True`) for scanner, CLV capture, settlement, market backtest, and overview reports.
-   - After creating/updating a scheduled job, run the script locally, trigger the scheduled-run once, then re-list jobs to verify `last_status=ok` and `last_delivery_error=null`; `cronjob(action="run")` executes on the next scheduler tick, not necessarily synchronously.
-   - Improve data quality before adding model complexity: kickoff-relative CLV capture, scanner deduplication, change-only alerts, and scheduled-run health reporting.
-   - See `references/worldcup-scheduled-run-operations.md` for the operational checklist and pitfalls.
+12. Operationalize the paper-trading loop with Hermes cron before considering real orders.
+   - Use deterministic script-only cron jobs (`no_agent=True`) for scanner, CLV capture, settlement, market backtest, and overview reports.
+   - After creating/updating cron, run the script locally, trigger the cron once, then re-list jobs to verify `last_status=ok` and `last_delivery_error=null`; `cronjob(action="run")` executes on the next scheduler tick, not necessarily synchronously.
+   - Improve data quality before adding model complexity: kickoff-relative CLV capture, scanner deduplication, change-only alerts, and cron health reporting.
+   - See `references/worldcup-cron-operations.md` for the operational checklist and pitfalls.
 
-13. Harden scheduled-run data quality before trusting paper results.
+13. Harden cron data quality before trusting paper results.
    - Scanner jobs should alert/record only on new BUY, BUY disappearance, material edge change, or material market-quality deterioration (spread widening / liquidity drop); repeated identical scans should stay silent and not create duplicate snapshots.
+   - Scanner report copy should be beginner-friendly and cover every scheduled match in the report window, not only BUY opportunities: show each match as a card with “recommendation / what to buy / why / trading quality / paper stake,” translate `home/away/draw`, include `NO MARKET` rows when no usable Polymarket market is found, and keep a compact field glossary for `model`, `buy`, `edge`, `spread`, `liq`, and `stake`.
    - Capture CLV relative to kickoff, not a single fixed time of day. A practical default is polling every 15 minutes but recording only matches inside a kickoff-relative window such as 30-120 minutes before start.
-   - Add a no-agent scheduled-run health report that checks Polymarket job schedules/status and appends market-level backtest summary; this catches broken scripts or delivery before the tournament starts.
+   - Add a no-agent cron health report that checks Polymarket job schedules/status and appends market-level backtest summary; this catches broken scripts or delivery before the tournament starts.
 
 ## Useful Polymarket Endpoints
 
