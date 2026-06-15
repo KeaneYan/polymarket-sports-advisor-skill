@@ -11,7 +11,14 @@ metadata:
 
 # Polymarket Sports Advisor Development
 
-Use this when building or extending a Polymarket sports recommendation tool, especially for match-level markets such as World Cup 1X2 outcomes.
+Use this when building, extending, or operating a read-only Polymarket sports recommendation tool, especially for match-level markets such as World Cup 1X2 outcomes.
+
+## Runnable Reference Implementation
+
+- Tool repository: `https://github.com/KeaneYan/worldcup-polymarket-advisor`
+- CLI commands: `wc-poly-advisor` for one-match recommendations; `wc-poly-report` for schedule reports, paper snapshots, CLV, settlement, backtests, and simulations.
+- This skill is the workflow/playbook layer. Do not copy the full tool source into the skill; install or clone the tool repo and keep code changes there.
+- Quick install from a skill checkout: `bash polymarket-sports-advisor-development/scripts/install_worldcup_advisor.sh`.
 
 ## Safety Boundaries
 

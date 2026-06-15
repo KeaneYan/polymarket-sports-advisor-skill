@@ -1,6 +1,6 @@
 # Polymarket Sports Advisor Skill
 
-A Hermes Agent skill for building **read-only Polymarket sports advisor tools**: match mapping, model probabilities, CLOB pricing, paper trading, CLV tracking, model calibration, team-form adjustments, injury/lineup notes, Monte Carlo simulation, and scheduled reporting.
+A Hermes Agent skill for building and operating **read-only Polymarket sports advisor tools**. The runnable World Cup CLI lives in [`KeaneYan/worldcup-polymarket-advisor`](https://github.com/KeaneYan/worldcup-polymarket-advisor); this repository is the agent workflow/skill layer around it.
 
 ## What It Builds
 
@@ -19,15 +19,26 @@ A Hermes Agent skill for building **read-only Polymarket sports advisor tools**:
 - High edge is not low risk; low loss probability is not automatically good value.
 - Use paper ROI, Brier/log loss, CLV, and settled-market backtests before considering real orders.
 
-## Install
+## Install Skill
 
 ```bash
 hermes skills tap add KeaneYan/polymarket-sports-advisor-skill
 hermes skills install polymarket-sports-advisor-development
 ```
 
-Or inspect with the cross-agent Skills CLI:
+## Install Runnable Tool
 
 ```bash
-npx --yes skills add KeaneYan/polymarket-sports-advisor-skill --list
+# From this skill repo checkout
+bash polymarket-sports-advisor-development/scripts/install_worldcup_advisor.sh
+
+# Or manually
+git clone https://github.com/KeaneYan/worldcup-polymarket-advisor.git
+cd worldcup-polymarket-advisor
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -e .
+python -m pytest -q
 ```
+
+After install, use `wc-poly-advisor` for one-match analysis and `wc-poly-report` for schedule-driven scanner/CLV/backtest reports.
