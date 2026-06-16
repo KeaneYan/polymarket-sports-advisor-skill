@@ -1,7 +1,7 @@
 ---
 name: polymarket-sports-advisor-development
 description: Build and iterate read-only Polymarket sports betting advisor tools with TDD, market mapping, CLOB pricing, and paper-trading safety.
-version: 1.0.0
+version: 1.1.0
 author: Hermes Agent
 license: MIT
 metadata:
@@ -25,7 +25,7 @@ Use this when building, extending, or operating a read-only Polymarket sports re
 - Start read-only: no private keys, no wallet config, no order placement.
 - Treat outputs as recommendations, not automatic trades.
 - Add automatic betting only after paper-trading logs, calibration metrics, limits, and manual confirmation are in place.
-- Always flag本金亏损、流动性、滑点、盘口瞬变、地域/合规风险.
+- Always flag principal-loss risk, liquidity, slippage, market-quality swings, and jurisdictional / compliance risk.
 
 ## Implementation Pattern
 
@@ -101,6 +101,34 @@ Use this when building, extending, or operating a read-only Polymarket sports re
 
 - Gamma search: `https://gamma-api.polymarket.com/public-search?q=QUERY`
 - CLOB book: `https://clob.polymarket.com/book?token_id=TOKEN_ID`
+
+
+## CLI Quick Reference
+
+Key parameters for `wc-poly-advisor` (one-match) and `wc-poly-report` (schedule reports):
+
+- `wc-poly-advisor --home TEAM --away TEAM --home-elo N --away-elo N` — Elo-based probabilities.
+- `wc-poly-advisor --home-prob P --draw-prob P --away-prob P` — manual probabilities.
+- `--use-clob` — use CLOB orderbook depth-weighted buy price instead of Gamma outcome price.
+- `--target-shares N` — shares to simulate for CLOB depth-weighted fill.
+- `--min-edge P` — minimum edge (model − buy) for BUY (default 0.04).
+- `--max-spread P` — maximum accepted bid/ask spread (default 0.08).
+- `--min-liquidity N` — minimum market liquidity (default 500).
+- `--model-weight P` — shrink model probability toward market price (1.0 = pure model).
+- `--max-loss-probability P` — gate BUY by model loss probability (default 0.60).
+- `--record-db PATH` — record this recommendation as a SQLite paper snapshot.
+- `--json` — emit machine-readable JSON.
+- `wc-poly-report --mode scanner|overview|settlement|closing|backtest|health|simulation` — report modes.
+- `--hours N` — report window in hours (default 24).
+- `--record` — record BUY snapshots during scanner runs.
+- `--closing-minutes-before N` / `--closing-window-minutes N` — kickoff-relative CLV capture window.
+
+Calibration and import CLIs:
+
+- `wc-poly-calibrate-model --start-year YYYY --end-year YYYY --test-fraction 0.2 --rolling` — calibrate + rolling backtest.
+- `wc-poly-import-schedule --refresh-elo` — import fixtures and refresh Elo seed.
+- `wc-poly-import-elo` — refresh team Elo ratings from eloratings.net.
+- `wc-poly-import-form --start-year YYYY --end-year YYYY --limit N` — build team-form multipliers.
 
 ## Verification
 

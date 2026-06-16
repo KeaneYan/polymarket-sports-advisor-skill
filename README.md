@@ -28,6 +28,8 @@ hermes skills install polymarket-sports-advisor-development
 
 ## Install Runnable Tool
 
+**macOS / Linux:**
+
 ```bash
 # From this skill repo checkout
 bash polymarket-sports-advisor-development/scripts/install_worldcup_advisor.sh
