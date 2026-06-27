@@ -1,45 +1,42 @@
 # Beginner-Friendly Sports Advisor Reports
 
-Use this reference when shaping scheduled or preview reports for users who are not familiar with betting, prediction markets, or sports-market jargon.
+Use this reference when shaping scheduled or preview reports.
 
-## Report Shape
+## Current Format: Compact (2026-06-27)
 
-- Report every scheduled match in the window, not only BUY opportunities.
-- For each match, choose one headline outcome to explain:
-  - Prefer BUY if any outcome qualifies.
-  - Otherwise show the highest-edge WATCH/SKIP outcome.
-  - If no usable market is found, include a `NO MARKET` card instead of silently dropping the match.
-- Translate market labels into plain language:
-  - `home` -> `主队 <team> 赢`
-  - `draw` -> `平局`
-  - `away` -> `客队 <team> 赢`
-- Include full 1X2 model probabilities on every priced match card:
-  - `模型概率：主胜 <home> 18.5% / 平局 26.3% / 客胜 <away> 55.2%`
-- Keep the selected-outcome rationale separate from the full probability context:
-  - `为什么：模型估 X%，市场买入价 Y%，差值 Z%`
-- Show principal-loss frequency explicitly for the selected outcome:
-  - `亏本金概率：1 - 模型估算概率`
-  - `风险档位：低/中/中高/高波动`
+User feedback: "报告内容太多太乱" — reports were too long and cluttered for
+WeChat delivery. Redesigned from 13 lines/match to 2 lines (BUY) or 1 line
+(WATCH/SKIP). **See `references/compact-report-format.md` for the full spec.**
+
+Key design rules:
+- **Three-way probs on every priced card**: `主21% 平38% 客41%` — omitting
+  draw probability misleads about risk.
+- **Only BUY gets a second line** with CI width + risk + exit triggers.
+- **CI shows width (`CI±1%`), not absolute range** — bootstrap CI may not
+  bracket the point estimate (different param family), which looks like a bug.
+- **No glossary, no verbose field labels** — the compact format is
+  self-explanatory.
+- **One-line header** (count + BUY count + disclaimer), **one-line footer**
+  (risk warning).
 
 ## Noise Control
 
-- Manual/preview reports should show all matches so the user can see the full slate.
-- Scheduled delivery can remain change-only while manual reports stay complete.
-- - Write paper snapshots only for alert rows; do not let repeated scans inflate the ledger.
+- Manual/preview reports should show all matches so the user sees the full slate.
+- Scheduled delivery can remain change-only.
+- Write paper snapshots only for alert rows; do not let repeated scans inflate the ledger.
+- **Critical pitfall:** if the first alert's delivery fails (WeChat rate limit),
+  subsequent scanner runs suppress the alert because the DB snapshot already
+  exists — the report is permanently lost. See `references/worldcup-cron-operations.md`.
 
-## Field Glossary
+## Action Labels
 
-Always include a short glossary after the match cards:
-
-- `model`: model-estimated probability.
-- `buy`: current buy price / market-implied probability.
-- `edge`: `model - buy`; positive edge is a hypothesis, not proof.
-- `loss probability`: model-estimated chance that the selected Yes outcome does not happen; only meaningful if the model is calibrated.
-- `risk`: volatility bucket derived from loss probability; high edge does not mean low risk.
-- `spread`: bid/ask trading cost; smaller is better.
-- `liq`: liquidity/depth; larger generally means lower slippage.
-- `stake`: capped paper position size, not an instruction to place real money.
+| Emoji | Label | Meaning |
+|-------|-------|---------|
+| ✅ | BUY | Edge above threshold, loss prob acceptable — paper position |
+| 👀 | WATCH | Edge exists but below threshold or loss prob too high |
+| ⏭ | SKIP | Resolved market, spread too wide, or liquidity too low |
+| ⏭ | NO MARKET | No Polymarket 1X2 event found |
 
 ## Risk Copy
 
-Include a blunt risk line: this is read-only paper recommendation; model edge may be noise; even high-probability single matches can lose; watch slippage, depth, settlement, and regulatory risk.
+One-line footer: `⚠️ edge 可能是噪声，单场也会翻车，注意滑点/流动性/监管风险`

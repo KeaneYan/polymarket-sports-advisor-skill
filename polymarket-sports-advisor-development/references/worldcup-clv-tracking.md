@@ -75,6 +75,25 @@ fi
 
 Empty stdout means no delivery, which is preferable to sending daily zero-value reports.
 
+## Polling Frequency Design Decision
+
+**Why every 30 minutes instead of daily:**
+
+1. The `--closing-minutes-before 30 --closing-window-minutes 90` flags mean the script only captures prices for matches 30-120 minutes before kickoff.
+2. Match kickoff times are spread across the day. A daily run would miss most matches.
+3. Most runs find no match in window → output suppressed by grep → no message sent. Cost is ~zero (`no_agent=True`, pure Python).
+4. The script grep-suppresses "本次更新 closing prices：0" output, so users only see messages when a match is actually captured.
+
+**Why not use prices-history API to batch-fetch historical closing prices after settlement:**
+
+Polymarket's `/prices-history` endpoint has a critical limitation: **resolved/closed markets are forced to 12+ hour data granularity**, even for high-volume events. (GitHub: Polymarket/py-clob-client#216). This means you cannot retrieve the precise pre-kickoff price for a match that has already been resolved — you'd get a data point from up to 12 hours earlier, which is useless for CLV.
+
+**Practical implication:** Real-time polling (while the match is still active/tradeable) is the only reliable way to capture closing prices. Post-hoc batch retrieval via prices-history is not viable.
+
+**Why "schedule-driven triggering" doesn't help:**
+
+Hermes cron only supports fixed schedules (cron expressions, intervals, ISO timestamps). A "schedule-aware" approach (read schedule.json, trigger only before kickoffs) still requires polling schedule.json to decide when to run — just moving the polling target. The theoretical alternative (daily script creates one-shot cron jobs per match) adds complexity far exceeding the marginal gain of reducing ~48 daily empty Python calls.
+
 ## Verification
 
 - Unit test snapshot -> closing price -> CLV summary.
